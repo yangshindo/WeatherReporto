@@ -11,6 +11,10 @@ body {
     background-position: top center
 }
 
+p {
+    font-weight:600;
+}
+
 .content {
     margin-top: 20%
 }

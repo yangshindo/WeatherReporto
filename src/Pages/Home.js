@@ -1,7 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, Fragment } from "react";
 import { useLazyQuery } from "@apollo/client";
 import { GET_WEATHER_QUERY } from "../graphql/Queries";
 import swal from "sweetalert"
+import axios from "axios";
 
 function Home() {
   const [citySearched, setCitySearched] = useState("");
@@ -16,9 +17,10 @@ function Home() {
     console.log(data);
     if (!data.getCityByName) {
       swal({title: "City not found. Please try again.", text: "This page will reload shortly", icon: "info", button: null })
-      setTimeout(() => {window.location = "/"}, 2750)
+      //setTimeout(() => {window.location = "/"}, 2750)
     }
   }
+
 
   function submitHandler(event) {
     event.preventDefault()
@@ -27,22 +29,45 @@ function Home() {
     getWeather()
   }
 
+  function geolocationHandler() {
+    navigator.geolocation.getCurrentPosition(position => {
+    const { latitude, longitude } = position.coords;
+    axios.get('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+latitude+'&longitude='+longitude+'&localityLanguage=en')
+    .then(function (response) {
+      const normalizedResponse = response.data.city.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      setCitySearched(normalizedResponse)
+      getWeather()
+})
+
+
+    })
+
+  }
+
+
   return (
   <div>
   <div className="bg text-center">
   <div className="centered">
     <form onSubmit={submitHandler}>
 
-        <p className="firstLine"> W &nbsp; E &nbsp; A &nbsp; T &nbsp; H &nbsp; E &nbsp; R </p>
+      {citySearched ? null : <Fragment> <p className="firstLine"> W &nbsp; E &nbsp; A &nbsp; T &nbsp; H &nbsp; E &nbsp; R </p>
         <p className="thirdLine"> R &nbsp; E &nbsp; P &nbsp; O &nbsp; R &nbsp; T &nbsp; O </p>
-        <br />
-        
-        <p> <input ref={nameRef} className="InputStyle" placeholder="City Name" type="text"/></p>
+        <br /></Fragment>}
+       
+        <p>Search by city name</p>
+        <p> <input ref={nameRef} className="InputStyle" type="text"/></p>
         <button onClick={submitHandler} action="submit" type="button" className="btn btn-dark">Search</button>
+        <br />
+        <br />
+        <br />
+        <p>Get your local weather</p>
+        <button onClick={geolocationHandler} action='submit' type="button" className='btn btn-dark'>Geolocate</button>
+
         </form>
-        
+        <br />
         <br /> 
-        <p className="secondLine">Real time query GraphQL API - by João Mário</p>
+        <p className="secondLine">GraphQL + REST API Cross Query - by João Mário</p>
 
     <div className="display-data">
         {data && (
@@ -51,7 +76,7 @@ function Home() {
         <br />
             <p>
               {" "}
-              Temperature: {String(data.getCityByName.weather.temperature.actual)[0] + String(data.getCityByName.weather.temperature.actual)[1] + " ° C"}
+              Temperature: {(String (data.getCityByName.weather.temperature.actual -273.15)[0] + String (data.getCityByName.weather.temperature.actual -273.15)[1]) + "°C"} 
             </p>
             <p>
               Description: {data.getCityByName.weather.summary.description}
